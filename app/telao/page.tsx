@@ -45,7 +45,10 @@ function Telao() {
 
   useEffect(() => {
     carregar()
-    const t = setInterval(carregar, 1500)
+    // A cada 3 s, e parado quando a aba está escondida, para poupar comandos do Redis.
+    const t = setInterval(() => {
+      if (!document.hidden) carregar()
+    }, 3000)
     return () => clearInterval(t)
   }, [carregar])
 

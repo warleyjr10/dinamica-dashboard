@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { ok, erro } from '@/lib/api'
-import { registrar } from '@/lib/presenca'
+import { registrarPresenca } from '@/lib/dash-servidor'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,6 +16,6 @@ export async function POST(req: NextRequest) {
   }
   const p = corpo.safeParse(json)
   if (!p.success) return erro('DADOS_INVALIDOS', 'Dados inválidos')
-  await registrar(p.data.id)
+  await registrarPresenca(p.data.id)
   return ok({ ok: true })
 }

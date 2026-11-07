@@ -4,7 +4,7 @@ export type Store = {
   modo: 'redis' | 'memoria'
   hgetall(chave: string): Promise<Record<string, string>>
   hset(chave: string, campo: string, valor: string): Promise<void>
-  hdel(chave: string, campo: string): Promise<void>
+  hdel(chave: string, campos: string[]): Promise<void>
   del(chave: string): Promise<void>
   expire(chave: string, segundos: number): Promise<void>
 }
@@ -20,14 +20,22 @@ function criar(): Store {
     return {
       modo: 'redis',
       async hgetall(chave) {
-        const v = await r.hgetall<Record<string, string>>(chave)
-        return v ?? {}
+        // Com a desserialização automática desligada, o SDK devolve uma lista plana [campo, valor, campo, valor...].
+        const v: unknown = await r.hgetall<Record<string, unknown>>(chave)
+        const out: Record<string, string> = {}
+        if (!v) return out
+        if (Array.isArray(v)) {
+          for (let i = 0; i + 1 < v.length; i += 2) out[String(v[i])] = String(v[i + 1])
+          return out
+        }
+        for (const [k, x] of Object.entries(v as Record<string, unknown>)) out[k] = typeof x === 'string' ? x : JSON.stringify(x)
+        return out
       },
       async hset(chave, campo, valor) {
         await r.hset(chave, { [campo]: valor })
       },
-      async hdel(chave, campo) {
-        await r.hdel(chave, campo)
+      async hdel(chave, campos) {
+        if (campos.length) await r.hdel(chave, ...campos)
       },
       async del(chave) {
         await r.del(chave)
@@ -52,8 +60,8 @@ function criar(): Store {
     async hset(chave, campo, valor) {
       h(chave).set(campo, valor)
     },
-    async hdel(chave, campo) {
-      h(chave).delete(campo)
+    async hdel(chave, campos) {
+      for (const c of campos) h(chave).delete(c)
     },
     async del(chave) {
       mem.delete(chave)

@@ -1,11 +1,11 @@
 # Dinâmica: monte o seu dashboard do SMB
 
-App do congresso COONTROL 2026. Cada pessoa abre o link no celular, escreve o nome e monta um dashboard com cards prontos. O telão mostra os dashboards da plateia quase em tempo real (atualiza a cada 1,5 segundo).
+App do congresso COONTROL 2026. Cada pessoa abre o link no celular, escreve o nome e monta um dashboard com cards prontos. O telão mostra os dashboards da plateia quase em tempo real (atualiza a cada 3 segundos).
 
 ## Endereços do app
 
 - `/` : tela da plateia (celular).
-- `/telao` : telão. Mostra quantas pessoas estão online (páginas abertas nos últimos 30 segundos). Os botões de apagar (um dashboard ou todos) aparecem sem precisar de chave enquanto a variável `HOST_KEY` não existir. Se você criar `HOST_KEY`, passe a abrir `/telao?key=SUA_CHAVE`.
+- `/telao` : telão. Mostra quantas pessoas estão online (páginas abertas nos últimos 50 segundos). Os botões de apagar (um dashboard ou todos) aparecem sem precisar de chave enquanto a variável `HOST_KEY` não existir. Se você criar `HOST_KEY`, passe a abrir `/telao?key=SUA_CHAVE`.
 - No canto do telão há o QR code e o link. Clique no link para colar outro endereço (por exemplo um domínio próprio). O QR code se atualiza sozinho.
 - `/api/v1/health` : mostra se o app está de pé e se o Redis está conectado (`armazenamento: redis`).
 
@@ -32,3 +32,11 @@ Sem Redis configurado, o app usa a memória do próprio computador (serve só pa
 - Os valores dos cards são ilustrativos (brincadeira). Não há dado de cliente.
 - Os dados ficam no Redis por 48 horas e a sala aceita até 400 dashboards.
 - App temporário de evento: sem login e sem tabelas de negócio. Fora do padrão COONTROL (Next.js + Supabase) por decisão do projeto, usando Redis da Vercel. Se virar app permanente, consultar a TI (software@coontrol.com.br).
+
+## Uso de comandos do Redis (economia)
+
+- Tudo fica em um único hash do Redis, então cada leitura gasta 1 comando. O servidor guarda a leitura por 2 segundos, e o telão consulta a cada 3 segundos.
+- O celular dos participantes não consulta nada: só envia o dashboard e avisa presença a cada 20 segundos.
+- Telão e celular param de consultar quando a aba está escondida ou a tela apagada.
+- Estimativa (não medida em produção): cerca de 5 a 10 mil comandos para 150 pessoas durante 15 minutos. Em teste local com 2 participantes, foram 14 comandos.
+- Teste e deixe abas antigas fechadas antes do evento: cada aba aberta do telão continua consultando. O consumo aparece na tela de uso do banco no Upstash.
